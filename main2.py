@@ -1,9 +1,7 @@
 
 import threading
 import time
-
 import cv2
-import os
 from pynput.mouse import  Controller, Button
 import mss
 import numpy as np
@@ -56,6 +54,7 @@ def kb():
         time.sleep(0.2)
 def start():
     identify_area, click_xy = (basic_xy[0] - 210, basic_xy[1] - 11, 10, 20), (basic_xy[0] - 250, basic_xy[1] - 447)
+
     ms = _mss(identify_area)
     th = threading.Thread(target=kb)
     th.start()
@@ -72,17 +71,16 @@ def start():
 
         clicked(identify_area[0], identify_area[1], button='left')
         clicked(key[0] + click_xy[0], key[1] + click_xy[1], button='left')
-
 if __name__ == '__main__':
-    print('1.选择:192片,第二张拼图')
+    print('1.选择:192片,第二张拼图 （务必已管理员身份打开脚本）')
     print('（非必选项 游戏:16:9,1700x956）')
-    print('2.请先校准位置:A键手动校准位置(鼠标移到‘游戏开始’左上角),S键自动校准位置,D键修改速度,Esc键退出脚本')
+    print('2.请先校准位置:S键自动校准位置,A键手动校准位置(鼠标移到‘选择拼图’左上角),D键修改速度,Esc键退出脚本')
 
     with keyboard.Events() as events:
         for event in events:
             try:
                 if isinstance(event, keyboard.Events.Release) and event.key.char=='a':
-                        basic_xy = Controller()
+                        basic_xy = Controller().position
                         print('位置已录入!')
                         break
                 elif  isinstance(event, keyboard.Events.Release) and event.key.char=='s':
@@ -96,11 +94,12 @@ if __name__ == '__main__':
                     print(f'请输入:当前({speed},回车确认)')
                     speed=float(input()[1:])
                     print('已设置',speed)
-                    print('2.请先校准位置:S键自动校准位置,A键手动校准位置(鼠标移到‘游戏开始’左上角),D键修改速度,Esc键退出脚本')
+                    print('2.请先校准位置:S键自动校准位置,A键手动校准位置(鼠标移到‘选择拼图’左上角),D键修改速度,Esc键退出脚本')
                 elif event.key == keyboard.Key.esc:
                     exit(0)
             except AttributeError:
                 pass
+
     print('开始执行,Esc键退出脚本...')
     start()
     print('脚本退出')
