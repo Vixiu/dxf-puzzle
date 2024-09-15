@@ -1,13 +1,10 @@
-import msvcrt
+
 import threading
 import time
-from os import times
 
 import cv2
 import os
-
-from pynput.mouse import  Controller
-import pydirectinput as pyautogui
+from pynput.mouse import  Controller, Button
 import mss
 import numpy as np
 from pynput import keyboard
@@ -16,8 +13,9 @@ image_byte=b'\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x00\x00\x01\x00\x01\x00\x0
 XZPT=cv2.imdecode(np.frombuffer(image_byte, dtype=np.uint8), cv2.IMREAD_COLOR).reshape((62 ,130, 3))
 COLORS=[(0, 0, 0), (17, 34, 51), (34, 68, 102), (51, 102, 153), (68, 136, 204), (85, 170, 255), (102, 204, 50), (119, 238, 101), (136, 16, 152), (153, 50, 203), (170, 84, 254), (187, 118, 49), (204, 152, 100), (221, 186, 151), (238, 220, 202), (255, 254, 253)]
 COLOR_XY={(COLORS[i], COLORS[k]) :(i * 40 + 20, k * 30 + 15)for k in range(12) for i in range(16)}
-
+mouse = Controller()
 flag=True
+speed=0.001
 def init_location():
     result = cv2.matchTemplate(_mss((0, 0, 1920, 1080))(), XZPT, cv2.TM_CCORR_NORMED)
     min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
@@ -40,19 +38,22 @@ def _mss(game_region):
 
     return shot
 def clicked(x,y,button):
-    pyautogui.mouseDown(x,y,button=button)
-  #  time.sleep(0.1)
-    pyautogui.mouseUp(x, y, button=button)
+    mouse.position = (x, y)
+    time.sleep(0.001)
+    mouse.press(Button.left)
+    time.sleep(0.001)
+    mouse.release(Button.left)
+    time.sleep(0.001)
 def kb():
 # 监听键盘键入
     with keyboard.Events() as events:
         for event in events:
             # 监听esc键，释放esc键，停止监听。
             if event.key == keyboard.Key.esc:
-
                 global flag
                 flag=False
                 break
+        time.sleep(0.2)
 def start():
     identify_area, click_xy = (basic_xy[0] - 210, basic_xy[1] - 11, 10, 20), (basic_xy[0] - 250, basic_xy[1] - 447)
     ms = _mss(identify_area)
@@ -68,29 +69,38 @@ def start():
             clicked(*basic_xy, button='left')
             continue
         # print(rgb1 in COLORS,rgb2 in COLORS,(rgb1,rgb2) in dt)
+
         clicked(identify_area[0], identify_area[1], button='left')
         clicked(key[0] + click_xy[0], key[1] + click_xy[1], button='left')
 
 if __name__ == '__main__':
     print('1.选择:192片,第二张拼图')
     print('（非必选项 游戏:16:9,1700x956）')
-    print('2.请先校准位置:A键手动校准位置(鼠标移到‘游戏开始’左上角),S键自动校准位置,Esc键退出脚本')
+    print('2.请先校准位置:A键手动校准位置(鼠标移到‘游戏开始’左上角),S键自动校准位置,D键修改速度,Esc键退出脚本')
+
     with keyboard.Events() as events:
         for event in events:
-            if isinstance(event, keyboard.Events.Release) and event.key.char=='a':
-                    basic_xy = Controller()
-                    print('位置已录入!')
-                    break
-            elif  isinstance(event, keyboard.Events.Release) and event.key.char=='s':
-                basic_xy = init_location()
-                if basic_xy is None:
-                    print('自动校准位置失败,请重试或手动录入(鼠标移到‘游戏开始’左上角)')
-                else:
-                    print('校准成功!')
-                    break
-            elif event.key == keyboard.Key.esc:
-                exit(0)
-    #basic_xy=(936, 661)
+            try:
+                if isinstance(event, keyboard.Events.Release) and event.key.char=='a':
+                        basic_xy = Controller()
+                        print('位置已录入!')
+                        break
+                elif  isinstance(event, keyboard.Events.Release) and event.key.char=='s':
+                    basic_xy = init_location()
+                    if basic_xy is None:
+                        print('自动校准位置失败,请重试或手动录入(鼠标移到‘游戏开始’左上角)')
+                    else:
+                        print('校准成功!')
+                        break
+                elif  isinstance(event, keyboard.Events.Release) and event.key.char=='d':
+                    print(f'请输入:当前({speed},回车确认)')
+                    speed=float(input()[1:])
+                    print('已设置',speed)
+                    print('2.请先校准位置:S键自动校准位置,A键手动校准位置(鼠标移到‘游戏开始’左上角),D键修改速度,Esc键退出脚本')
+                elif event.key == keyboard.Key.esc:
+                    exit(0)
+            except AttributeError:
+                pass
     print('开始执行,Esc键退出脚本...')
     start()
     print('脚本退出')
